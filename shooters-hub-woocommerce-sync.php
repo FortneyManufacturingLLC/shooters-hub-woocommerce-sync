@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shooters Hub WooCommerce Sync
  * Description: Sync WooCommerce catalog products to The Shooters Hub Swap Meet as brand-backed vendor listings.
- * Version: 0.1.0
+ * Version: 0.1.1
  * Author: Fortney Manufacturing LLC
  * License: GPL-2.0-or-later
  * Text Domain: shooters-hub-woocommerce-sync
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SHWC_SYNC_VERSION', '0.1.0');
+define('SHWC_SYNC_VERSION', '0.1.1');
 define('SHWC_SYNC_FILE', __FILE__);
 define('SHWC_SYNC_OPTION', 'shwc_sync_options');
 define('SHWC_SYNC_LOG_OPTION', 'shwc_sync_logs');
@@ -72,6 +72,13 @@ final class Shooters_Hub_WooCommerce_Sync {
             'store_id' => sanitize_title(get_bloginfo('name')),
             'store_url' => home_url('/'),
             'brand_id' => '',
+            'location_label' => '',
+            'location_city' => '',
+            'location_region' => '',
+            'location_country' => 'US',
+            'location_radius_miles' => '',
+            'location_lat' => '',
+            'location_lng' => '',
             'link_mode' => 'shooters_hub_listing',
             'publish_mode' => 'active',
             'sync_scope' => 'all',
@@ -118,6 +125,13 @@ final class Shooters_Hub_WooCommerce_Sync {
             'store_id' => sanitize_title($input['store_id'] ?? $current['store_id']),
             'store_url' => esc_url_raw($input['store_url'] ?? $current['store_url']),
             'brand_id' => sanitize_text_field($input['brand_id'] ?? $current['brand_id']),
+            'location_label' => sanitize_text_field($input['location_label'] ?? $current['location_label']),
+            'location_city' => sanitize_text_field($input['location_city'] ?? $current['location_city']),
+            'location_region' => sanitize_text_field($input['location_region'] ?? $current['location_region']),
+            'location_country' => sanitize_text_field($input['location_country'] ?? $current['location_country']),
+            'location_radius_miles' => $this->sanitize_optional_number($input['location_radius_miles'] ?? $current['location_radius_miles']),
+            'location_lat' => $this->sanitize_optional_number($input['location_lat'] ?? $current['location_lat']),
+            'location_lng' => $this->sanitize_optional_number($input['location_lng'] ?? $current['location_lng']),
             'link_mode' => in_array(($input['link_mode'] ?? ''), ['shooters_hub_listing', 'external_store', 'both'], true) ? $input['link_mode'] : 'shooters_hub_listing',
             'publish_mode' => in_array(($input['publish_mode'] ?? ''), ['active', 'pending_review', 'paused'], true) ? $input['publish_mode'] : 'active',
             'sync_scope' => in_array(($input['sync_scope'] ?? ''), ['all', 'in_stock'], true) ? $input['sync_scope'] : 'all',
@@ -143,6 +157,13 @@ final class Shooters_Hub_WooCommerce_Sync {
                     <?php $this->text_row('store_id', 'Store ID', $options['store_id']); ?>
                     <?php $this->text_row('store_url', 'Store URL', $options['store_url']); ?>
                     <?php $this->text_row('brand_id', 'Shooters Hub Brand ID', $options['brand_id']); ?>
+                    <?php $this->text_row('location_label', 'Public Location Label', $options['location_label']); ?>
+                    <?php $this->text_row('location_city', 'Location City', $options['location_city']); ?>
+                    <?php $this->text_row('location_region', 'Location State/Region', $options['location_region']); ?>
+                    <?php $this->text_row('location_country', 'Location Country', $options['location_country']); ?>
+                    <?php $this->text_row('location_radius_miles', 'Service Radius Miles', $options['location_radius_miles'], 'number'); ?>
+                    <?php $this->text_row('location_lat', 'Latitude', $options['location_lat'], 'number'); ?>
+                    <?php $this->text_row('location_lng', 'Longitude', $options['location_lng'], 'number'); ?>
                     <tr>
                         <th scope="row"><label for="shwc_link_mode">Buyer Flow</label></th>
                         <td>
@@ -171,12 +192,21 @@ final class Shooters_Hub_WooCommerce_Sync {
     }
 
     private function text_row(string $key, string $label, string $value, string $type = 'text'): void {
+        $step = in_array($key, ['location_radius_miles', 'location_lat', 'location_lng'], true) ? ' step="any"' : '';
         ?>
         <tr>
             <th scope="row"><label for="shwc_<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label></th>
-            <td><input class="regular-text" id="shwc_<?php echo esc_attr($key); ?>" type="<?php echo esc_attr($type); ?>" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[<?php echo esc_attr($key); ?>]" value="<?php echo esc_attr($value); ?>" /></td>
+            <td><input class="regular-text" id="shwc_<?php echo esc_attr($key); ?>" type="<?php echo esc_attr($type); ?>" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[<?php echo esc_attr($key); ?>]" value="<?php echo esc_attr($value); ?>"<?php echo $step; ?> /></td>
         </tr>
         <?php
+    }
+
+    private function sanitize_optional_number($value): string {
+        $raw = trim((string)$value);
+        if ($raw === '') {
+            return '';
+        }
+        return is_numeric($raw) ? $raw : '';
     }
 
     private function option(string $value, string $label, string $selected): void {
@@ -197,6 +227,13 @@ final class Shooters_Hub_WooCommerce_Sync {
                 <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[store_id]" value="<?php echo esc_attr($options['store_id']); ?>" />
                 <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[store_url]" value="<?php echo esc_attr($options['store_url']); ?>" />
                 <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[brand_id]" value="<?php echo esc_attr($options['brand_id']); ?>" />
+                <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[location_label]" value="<?php echo esc_attr($options['location_label']); ?>" />
+                <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[location_city]" value="<?php echo esc_attr($options['location_city']); ?>" />
+                <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[location_region]" value="<?php echo esc_attr($options['location_region']); ?>" />
+                <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[location_country]" value="<?php echo esc_attr($options['location_country']); ?>" />
+                <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[location_radius_miles]" value="<?php echo esc_attr($options['location_radius_miles']); ?>" />
+                <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[location_lat]" value="<?php echo esc_attr($options['location_lat']); ?>" />
+                <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[location_lng]" value="<?php echo esc_attr($options['location_lng']); ?>" />
                 <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[link_mode]" value="<?php echo esc_attr($options['link_mode']); ?>" />
                 <input type="hidden" name="<?php echo esc_attr(SHWC_SYNC_OPTION); ?>[publish_mode]" value="<?php echo esc_attr($options['publish_mode']); ?>" />
                 <table class="form-table" role="presentation">
@@ -528,6 +565,19 @@ final class Shooters_Hub_WooCommerce_Sync {
         return is_array($decoded) ? $decoded : [];
     }
 
+    private function location_payload(array $options): ?array {
+        $payload = [
+            'label' => $options['location_label'] ?: null,
+            'city' => $options['location_city'] ?: null,
+            'region' => $options['location_region'] ?: null,
+            'country' => $options['location_country'] ?: null,
+            'radiusMiles' => $options['location_radius_miles'] !== '' ? (float)$options['location_radius_miles'] : null,
+            'lat' => $options['location_lat'] !== '' ? (float)$options['location_lat'] : null,
+            'lng' => $options['location_lng'] !== '' ? (float)$options['location_lng'] : null,
+        ];
+        return array_filter($payload, static fn($value) => $value !== null && $value !== '') ? $payload : null;
+    }
+
     private function send_products(array $products): array {
         $options = $this->options();
         if (!$options['api_base'] || !$options['sync_key']) {
@@ -549,6 +599,7 @@ final class Shooters_Hub_WooCommerce_Sync {
                 'wordpressUrl' => home_url('/'),
                 'linkMode' => $options['link_mode'],
                 'publishMode' => $options['publish_mode'],
+                'storeLocation' => $this->location_payload($options),
                 'categoryMappings' => $this->category_mappings(),
                 'products' => $products,
             ]),
