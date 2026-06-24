@@ -25,7 +25,7 @@ Standalone WooCommerce plugin for syncing a vendor catalog into The Shooters Hub
 
 After activation, open **Shooters Hub Sync** in WordPress admin.
 
-- **Connection**: API base URL, sync key, store ID, store URL, brand ID, buyer flow, publish mode.
+- **Connection**: API base URL, sync key, store ID, store URL, brand ID, buyer flow, publish mode. The default API base is the direct Shooters Hub Firebase Functions API endpoint.
 - **Products**: all products, in-stock filter, per-product sync, per-product whitelist/blacklist.
 - **Rules**: global all-products/in-stock mode, category/tag whitelist and blacklist, SKU blacklist, optional category mapping JSON.
 - **Sync Log**: recent sync requests and API responses.

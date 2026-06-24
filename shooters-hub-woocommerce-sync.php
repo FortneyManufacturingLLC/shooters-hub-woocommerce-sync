@@ -67,7 +67,7 @@ final class Shooters_Hub_WooCommerce_Sync {
 
     private function default_options(): array {
         return [
-            'api_base' => 'https://the-shooters-hub.web.app/api',
+            'api_base' => 'https://us-central1-the-shooters-hub.cloudfunctions.net/api',
             'sync_key' => '',
             'store_id' => sanitize_title(get_bloginfo('name')),
             'store_url' => home_url('/'),
