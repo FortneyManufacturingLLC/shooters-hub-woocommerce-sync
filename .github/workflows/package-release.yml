@@ -1,0 +1,27 @@
+name: Package release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build plugin zip
+        run: |
+          mkdir -p dist/shooters-hub-woocommerce-sync
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='dist' \
+            ./ dist/shooters-hub-woocommerce-sync/
+          cd dist
+          zip -r shooters-hub-woocommerce-sync.zip shooters-hub-woocommerce-sync
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shooters-hub-woocommerce-sync
+          path: dist/shooters-hub-woocommerce-sync.zip
